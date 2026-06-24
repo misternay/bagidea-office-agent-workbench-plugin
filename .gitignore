@@ -1,0 +1,19 @@
+# Runtime data (generated at install time)
+data/
+
+# Claude Code workspace
+.claude/
+
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Backup files
+*.bak
