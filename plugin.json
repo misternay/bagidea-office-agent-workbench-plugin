@@ -1,0 +1,14 @@
+{
+  "id": "agent-workbench",
+  "name": "Agent Workbench",
+  "version": "1.0.0",
+  "description": "Test and benchmark AI agents with prompts, capture responses and token usage",
+  "panel": "panel.html",
+  "commands": [
+    { "name": "run", "args": "<agent> <prompt>", "desc": "Run a prompt on an agent and capture response" },
+    { "name": "list-agents", "args": "", "desc": "List all available agents from registry" },
+    { "name": "save-case", "args": "<runId> [name]", "desc": "Save a run result as a reusable test case" }
+  ],
+  "core": false,
+  "window": { "w": 1000, "h": 700, "resizable": true }
+}

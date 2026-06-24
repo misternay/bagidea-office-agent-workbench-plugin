@@ -1,0 +1,1543 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Workbench</title>
+<style>
+/* === Design Tokens (Taste-Skill: VARIANCE=5, MOTION=3, DENSITY=5) === */
+:root {
+  --bg: #0c1322;
+  --surface: #111b2e;
+  --text: #dbe7ff;
+  --text-dim: #6b7d99;
+  --accent: #5ec8ff;
+  --success: #2ecc71;
+  --error: #e74c3c;
+  --warning: #f39c12;
+  --border: #1a2740;
+  --code-bg: #0a111f;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Status colors */
+  --status-online: #2ecc71;
+  --status-offline: #6b7d99;
+  --status-busy: #f39c12;
+}
+
+/* === Reset & Base === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, "Segoe UI", "Leelawadee UI", Tahoma, "Noto Sans Thai", "Noto Sans CJK SC", "Noto Sans CJK JP", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* === Layout: 3-Panel === */
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.metrics-panel {
+  width: 240px;
+  min-width: 240px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* === Sidebar Header === */
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-title::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.sidebar-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filter-select {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+.filter-select:focus {
+  border-color: var(--accent);
+}
+
+.search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+/* === History List === */
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.history-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.history-item {
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  border-color: var(--text-dim);
+}
+
+.history-item.active {
+  border-color: var(--accent);
+  background: rgba(94, 200, 255, 0.05);
+}
+
+.history-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.history-agent {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.history-status {
+  font-size: 11px;
+}
+
+.history-status.success {
+  color: var(--success);
+}
+
+.history-status.error {
+  color: var(--error);
+}
+
+.history-status.timeout {
+  color: var(--warning);
+}
+
+.history-prompt {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+/* === Sidebar Footer === */
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* === Main Panel Header === */
+.main-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.agent-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.agent-dropdown {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.agent-dropdown:focus {
+  border-color: var(--accent);
+}
+
+/* === Prompt Input === */
+.prompt-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.prompt-textarea {
+  width: 100%;
+  min-height: 120px;
+  max-height: 300px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+}
+
+.prompt-textarea:focus {
+  border-color: var(--accent);
+}
+
+.prompt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.char-count {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* === Buttons === */
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--error);
+  color: white;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* === Response Section === */
+.response-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* === Metrics Bar === */
+.metrics-bar {
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-label {
+  color: var(--text-dim);
+}
+
+.metric-value {
+  font-weight: 600;
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.metric-value.success {
+  color: var(--success);
+}
+
+.metric-value.error {
+  color: var(--error);
+}
+
+/* === Tabs === */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* === Tab Content === */
+.tab-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.tab-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tab-content::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.response-text {
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: var(--radius);
+  color: var(--text);
+}
+
+.reasoning-text {
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  border-left: 3px solid var(--accent);
+}
+
+.raw-json {
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+}
+
+/* === Response Actions === */
+.response-actions {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* === Loading State === */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.elapsed-time {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+  margin-bottom: 8px;
+}
+
+.loading-text {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* === Empty State === */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  height: 100%;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+/* === Error State === */
+.error-state {
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.error-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--error);
+  margin-bottom: 8px;
+}
+
+.error-state-message {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* === Metrics Panel (Right) === */
+.metrics-section {
+  margin-bottom: 24px;
+}
+
+.metrics-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.metrics-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.metrics-item:last-child {
+  border-bottom: none;
+}
+
+.metrics-item-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.metrics-item-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.online {
+  background: var(--status-online);
+}
+
+.status-dot.offline {
+  background: var(--status-offline);
+}
+
+.status-dot.busy {
+  background: var(--status-busy);
+}
+
+/* === Modal === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transform: scale(0.95);
+  transition: transform 0.2s;
+}
+
+.modal-overlay.active .modal {
+  transform: scale(1);
+}
+
+.modal h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: "Cascadia Code", "JetBrains Mono", "Fira Code", monospace;
+}
+
+.form-group .hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+  .metrics-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .history-list {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .history-item {
+    min-width: 200px;
+    flex-shrink: 0;
+  }
+
+  .main-panel {
+    min-height: 0;
+  }
+
+  .metrics-panel {
+    display: none;
+  }
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Left Sidebar: History -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">History</div>
+      <div class="sidebar-filter">
+        <select class="filter-select" id="historyFilter" onchange="filterHistory()">
+          <option value="all">All Agents</option>
+        </select>
+      </div>
+      <input type="text" class="search-input" id="historySearch" placeholder="Search prompts..." oninput="searchHistory()">
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">No runs yet</div>
+        <div class="empty-state-desc">Run your first prompt to see history here.</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary btn-sm" onclick="clearHistory()" style="flex: 1;">Clear All</button>
+    </div>
+  </aside>
+
+  <!-- Center: Main Panel -->
+  <main class="main-panel">
+    <!-- Agent Selector -->
+    <div class="main-header">
+      <div class="agent-selector">
+        <select class="agent-dropdown" id="agentSelector">
+          <option value="">Select an agent...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Prompt Input -->
+    <div class="prompt-section">
+      <textarea
+        class="prompt-textarea"
+        id="promptInput"
+        placeholder="Type your prompt here... (Cmd/Ctrl+Enter to send)"
+        oninput="updateCharCount()"
+      ></textarea>
+      <div class="prompt-footer">
+        <span class="char-count" id="charCount">0 characters</span>
+        <div class="prompt-actions">
+          <button class="btn btn-secondary btn-sm" onclick="clearPrompt()">Clear</button>
+          <button class="btn btn-primary" id="sendBtn" onclick="sendPrompt()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response Section -->
+    <div class="response-section">
+      <!-- Metrics Bar -->
+      <div class="metrics-bar" id="metricsBar" style="display: none;">
+        <div class="metric">
+          <span class="metric-label">Tokens:</span>
+          <span class="metric-value" id="metricTokens">0 in / 0 out</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Latency:</span>
+          <span class="metric-value" id="metricLatency">0ms</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Status:</span>
+          <span class="metric-value" id="metricStatus">—</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs" id="responseTabs" style="display: none;">
+        <button class="tab active" data-tab="response" onclick="switchTab('response')">Response</button>
+        <button class="tab" data-tab="reasoning" onclick="switchTab('reasoning')">Reasoning</button>
+        <button class="tab" data-tab="raw" onclick="switchTab('raw')">Raw JSON</button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="tab-content" id="tabContent">
+        <div class="empty-state">
+          <div class="empty-state-icon">🚀</div>
+          <div class="empty-state-title">Ready to test</div>
+          <div class="empty-state-desc">Select an agent, type a prompt, and click Send to see the response, reasoning, and metrics here.</div>
+        </div>
+      </div>
+
+      <!-- Response Actions -->
+      <div class="response-actions" id="responseActions" style="display: none;">
+        <button class="btn btn-secondary btn-sm" onclick="copyResponse()">Copy Response</button>
+        <button class="btn btn-secondary btn-sm" onclick="openSaveTestCaseModal()">Save as Test Case</button>
+        <button class="btn btn-primary btn-sm" onclick="rerunPrompt()">Re-run</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Panel: Metrics -->
+  <aside class="metrics-panel">
+    <div class="metrics-section">
+      <div class="metrics-section-title">Agent Info</div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Name</span>
+        <span class="metrics-item-value" id="agentName">—</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Role</span>
+        <span class="metrics-item-value" id="agentRole">—</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Status</span>
+        <span class="metrics-item-value" id="agentStatus">
+          <span class="status-indicator">
+            <span class="status-dot offline"></span>
+            <span>Offline</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="metrics-section">
+      <div class="metrics-section-title">Current Run</div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Model</span>
+        <span class="metrics-item-value" id="runModel">—</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Tokens In</span>
+        <span class="metrics-item-value" id="runTokensIn">0</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Tokens Out</span>
+        <span class="metrics-item-value" id="runTokensOut">0</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Total Tokens</span>
+        <span class="metrics-item-value" id="runTokensTotal">0</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Latency</span>
+        <span class="metrics-item-value" id="runLatency">0ms</span>
+      </div>
+    </div>
+
+    <div class="metrics-section">
+      <div class="metrics-section-title">Session Stats</div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Total Runs</span>
+        <span class="metrics-item-value" id="sessionRuns">0</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Success Rate</span>
+        <span class="metrics-item-value" id="sessionSuccess">0%</span>
+      </div>
+      <div class="metrics-item">
+        <span class="metrics-item-label">Avg Latency</span>
+        <span class="metrics-item-value" id="sessionAvgLatency">0ms</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Save Test Case Modal -->
+<div class="modal-overlay" id="testCaseModal" onclick="handleModalOverlayClick(event)">
+  <div class="modal">
+    <h2>Save as Test Case</h2>
+    <form id="testCaseForm" onsubmit="saveTestCase(event)">
+      <div class="form-group">
+        <label for="testCaseName">Test Case Name</label>
+        <input type="text" id="testCaseName" placeholder="e.g., Basic greeting test" required>
+      </div>
+      <div class="form-group">
+        <label for="testCaseExpected">Expected Behavior (optional)</label>
+        <textarea id="testCaseExpected" placeholder="Describe what you expect the agent to do..."></textarea>
+        <div class="hint">Used for comparison when re-running this test case</div>
+      </div>
+      <div class="form-group">
+        <label for="testCaseTags">Tags (optional)</label>
+        <input type="text" id="testCaseTags" placeholder="regression, greeting, basic">
+        <div class="hint">Comma-separated, max 5 tags</div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeTestCaseModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// === State ===
+let runs = [];
+let currentRun = null;
+let agents = [];
+let isRunning = false;
+let elapsedInterval = null;
+let elapsedStart = 0;
+
+// === API Base ===
+const API_BASE = '/plugin/agent-workbench';
+
+// === Initialization ===
+document.addEventListener('DOMContentLoaded', () => {
+  loadAgents();
+  loadHistory();
+  setupKeyboardShortcuts();
+});
+
+// === API Calls ===
+async function loadAgents() {
+  try {
+    const res = await fetch(`${API_BASE}/agents`);
+    const data = await res.json();
+    agents = data.agents || [];
+    renderAgentDropdown();
+  } catch (err) {
+    console.error('Failed to load agents:', err);
+  }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    const data = await res.json();
+    runs = data.runs || [];
+    renderHistory();
+    updateSessionStats();
+  } catch (err) {
+    console.error('Failed to load history:', err);
+  }
+}
+
+async function sendPrompt() {
+  const agentId = document.getElementById('agentSelector').value;
+  const prompt = document.getElementById('promptInput').value.trim();
+
+  if (!agentId) {
+    alert('Please select an agent first.');
+    return;
+  }
+
+  if (!prompt) {
+    alert('Please enter a prompt.');
+    return;
+  }
+
+  if (isRunning) {
+    return;
+  }
+
+  isRunning = true;
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Running...';
+
+  // Show loading state
+  showLoadingState();
+  startElapsedTimer();
+
+  try {
+    // POST /run
+    const runRes = await fetch(`${API_BASE}/cmd`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cmd: 'run', args: { agent: agentId, prompt } })
+    });
+    const runData = await runRes.json();
+
+    if (!runData.ok) {
+      throw new Error(runData.error || 'Failed to start run');
+    }
+
+    const runId = runData.runId;
+
+    // Poll GET /status?id= every 500ms
+    let status = 'running';
+    let attempts = 0;
+    const maxAttempts = 240; // 120 seconds at 500ms intervals
+
+    while (status === 'running' && attempts < maxAttempts) {
+      await sleep(500);
+      attempts++;
+
+      const statusRes = await fetch(`${API_BASE}/status?id=${runId}`);
+      const statusData = await statusRes.json();
+      status = statusData.status;
+    }
+
+    if (status === 'running') {
+      throw new Error('Timeout: Run exceeded 120 seconds');
+    }
+
+    // GET /result?id=
+    const resultRes = await fetch(`${API_BASE}/result?id=${runId}`);
+    const resultData = await resultRes.json();
+
+    if (!resultData.ok) {
+      throw new Error(resultData.error || 'Failed to get result');
+    }
+
+    // Display result
+    displayRun(resultData.run);
+
+    // Reload history
+    await loadHistory();
+
+  } catch (err) {
+    showErrorState(err.message);
+  } finally {
+    stopElapsedTimer();
+    isRunning = false;
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send';
+  }
+}
+
+// === Rendering ===
+function renderAgentDropdown() {
+  const dropdown = document.getElementById('agentSelector');
+  dropdown.innerHTML = '<option value="">Select an agent...</option>';
+
+  agents.forEach(agent => {
+    const option = document.createElement('option');
+    option.value = agent.id;
+    option.textContent = `${agent.name} (${agent.role || 'Agent'})`;
+    dropdown.appendChild(option);
+  });
+
+  // Restore last selected agent
+  const lastAgent = localStorage.getItem('aw_lastAgent');
+  if (lastAgent && agents.find(a => a.id === lastAgent)) {
+    dropdown.value = lastAgent;
+    updateAgentInfo(lastAgent);
+  }
+
+  dropdown.addEventListener('change', (e) => {
+    const agentId = e.target.value;
+    localStorage.setItem('aw_lastAgent', agentId);
+    updateAgentInfo(agentId);
+  });
+}
+
+function updateAgentInfo(agentId) {
+  const agent = agents.find(a => a.id === agentId);
+  if (agent) {
+    document.getElementById('agentName').textContent = agent.name;
+    document.getElementById('agentRole').textContent = agent.role || 'Agent';
+    document.getElementById('agentStatus').innerHTML = `
+      <span class="status-indicator">
+        <span class="status-dot ${agent.status || 'offline'}"></span>
+        <span>${agent.status || 'offline'}</span>
+      </span>
+    `;
+  } else {
+    document.getElementById('agentName').textContent = '—';
+    document.getElementById('agentRole').textContent = '—';
+    document.getElementById('agentStatus').innerHTML = `
+      <span class="status-indicator">
+        <span class="status-dot offline"></span>
+        <span>Offline</span>
+      </span>
+    `;
+  }
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const filter = document.getElementById('historyFilter').value;
+  const search = document.getElementById('historySearch').value.toLowerCase();
+
+  let filtered = runs;
+
+  if (filter !== 'all') {
+    filtered = filtered.filter(r => r.agent === filter);
+  }
+
+  if (search) {
+    filtered = filtered.filter(r => r.prompt.toLowerCase().includes(search));
+  }
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">No runs found</div>
+        <div class="empty-state-desc">${runs.length === 0 ? 'Run your first prompt to see history here.' : 'Try adjusting your filters.'}</div>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filtered.map(run => `
+    <div class="history-item ${currentRun && currentRun.id === run.id ? 'active' : ''}" onclick="loadRun('${run.id}')">
+      <div class="history-item-header">
+        <span class="history-agent">${getAgentName(run.agent)}</span>
+        <span class="history-status ${run.status}">${run.status === 'success' ? '✅' : run.status === 'error' ? '❌' : '⏱️'}</span>
+      </div>
+      <div class="history-prompt">${escapeHtml(truncate(run.prompt, 60))}</div>
+      <div class="history-meta">
+        <span>${formatTimeAgo(run.timestamp)}</span>
+        <span>${run.elapsed || 0}ms</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Update filter dropdown
+  updateFilterDropdown();
+}
+
+function updateFilterDropdown() {
+  const filter = document.getElementById('historyFilter');
+  const currentValue = filter.value;
+  const uniqueAgents = [...new Set(runs.map(r => r.agent))];
+
+  filter.innerHTML = '<option value="all">All Agents</option>';
+  uniqueAgents.forEach(agentId => {
+    const option = document.createElement('option');
+    option.value = agentId;
+    option.textContent = getAgentName(agentId);
+    filter.appendChild(option);
+  });
+
+  filter.value = currentValue;
+}
+
+function filterHistory() {
+  renderHistory();
+}
+
+function searchHistory() {
+  renderHistory();
+}
+
+function loadRun(runId) {
+  const run = runs.find(r => r.id === runId);
+  if (run) {
+    currentRun = run;
+    displayRun(run);
+    renderHistory();
+  }
+}
+
+function displayRun(run) {
+  currentRun = run;
+
+  // Map backend field names (usage.input → tokensIn, usage.output → tokensOut, elapsed → latencyMs)
+  var tokensIn = (run.usage && run.usage.input != null) ? run.usage.input : 0;
+  var tokensOut = (run.usage && run.usage.output != null) ? run.usage.output : 0;
+  var latencyMs = run.elapsed || 0;
+  var status = run.status || (run.response ? 'success' : run.error ? 'error' : 'running');
+
+  // Show metrics bar
+  document.getElementById('metricsBar').style.display = 'flex';
+  document.getElementById('metricTokens').textContent = tokensIn + ' in / ' + tokensOut + ' out';
+  document.getElementById('metricLatency').textContent = latencyMs + 'ms';
+  var statusEl = document.getElementById('metricStatus');
+  statusEl.textContent = status;
+  statusEl.className = 'metric-value ' + status;
+
+  // Update right panel metrics
+  document.getElementById('runModel').textContent = run.model || '—';
+  document.getElementById('runTokensIn').textContent = tokensIn;
+  document.getElementById('runTokensOut').textContent = tokensOut;
+  document.getElementById('runTokensTotal').textContent = tokensIn + tokensOut;
+  document.getElementById('runLatency').textContent = latencyMs + 'ms';
+
+  // Show tabs
+  document.getElementById('responseTabs').style.display = 'flex';
+
+  // Render tab content
+  const tabContent = document.getElementById('tabContent');
+  tabContent.innerHTML = `
+    <div class="tab-pane active" id="pane-response">
+      <div class="response-text">${escapeHtml(run.response || 'No response')}</div>
+    </div>
+    <div class="tab-pane" id="pane-reasoning">
+      <div class="reasoning-text">${escapeHtml(run.reasoning || 'No reasoning available')}</div>
+    </div>
+    <div class="tab-pane" id="pane-raw">
+      <div class="raw-json">${escapeHtml(JSON.stringify(run, null, 2))}</div>
+    </div>
+  `;
+
+  // Show response actions
+  document.getElementById('responseActions').style.display = 'flex';
+
+  // Load prompt into textarea
+  document.getElementById('promptInput').value = run.prompt;
+  document.getElementById('agentSelector').value = run.agent;
+  updateCharCount();
+}
+
+function showLoadingState() {
+  document.getElementById('metricsBar').style.display = 'none';
+  document.getElementById('responseTabs').style.display = 'none';
+  document.getElementById('responseActions').style.display = 'none';
+
+  const tabContent = document.getElementById('tabContent');
+  tabContent.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div class="elapsed-time" id="elapsedTime">0.0s</div>
+      <div class="loading-text">Running agent...</div>
+    </div>
+  `;
+}
+
+function showErrorState(message) {
+  document.getElementById('metricsBar').style.display = 'none';
+  document.getElementById('responseTabs').style.display = 'none';
+  document.getElementById('responseActions').style.display = 'none';
+
+  const tabContent = document.getElementById('tabContent');
+  tabContent.innerHTML = `
+    <div class="error-state">
+      <div class="error-state-title">Error</div>
+      <div class="error-state-message">${escapeHtml(message)}</div>
+    </div>
+  `;
+}
+
+// === Tabs ===
+function switchTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.tab === tabName);
+  });
+
+  // Update tab panes
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.remove('active');
+  });
+  document.getElementById(`pane-${tabName}`).classList.add('active');
+}
+
+// === Actions ===
+function clearPrompt() {
+  document.getElementById('promptInput').value = '';
+  updateCharCount();
+}
+
+function clearHistory() {
+  if (!confirm('Clear all run history? This cannot be undone.')) {
+    return;
+  }
+
+  fetch(`${API_BASE}/cmd`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cmd: 'clear_history' })
+  }).then(() => {
+    runs = [];
+    currentRun = null;
+    renderHistory();
+    updateSessionStats();
+
+    // Reset main panel
+    document.getElementById('metricsBar').style.display = 'none';
+    document.getElementById('responseTabs').style.display = 'none';
+    document.getElementById('responseActions').style.display = 'none';
+    document.getElementById('tabContent').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🚀</div>
+        <div class="empty-state-title">Ready to test</div>
+        <div class="empty-state-desc">Select an agent, type a prompt, and click Send to see the response, reasoning, and metrics here.</div>
+      </div>
+    `;
+  });
+}
+
+function copyResponse() {
+  if (!currentRun) return;
+
+  navigator.clipboard.writeText(currentRun.response || '').then(() => {
+    alert('Response copied to clipboard!');
+  }).catch(() => {
+    alert('Failed to copy response.');
+  });
+}
+
+function rerunPrompt() {
+  if (!currentRun) return;
+
+  document.getElementById('agentSelector').value = currentRun.agent;
+  document.getElementById('promptInput').value = currentRun.prompt || '';
+  updateCharCount();
+
+  // Trigger run (model override from currentRun.model is picked up by sendPrompt)
+  sendPrompt();
+}
+
+// === Test Cases ===
+function openSaveTestCaseModal() {
+  if (!currentRun) return;
+
+  document.getElementById('testCaseModal').classList.add('active');
+  document.getElementById('testCaseName').focus();
+}
+
+function closeTestCaseModal() {
+  document.getElementById('testCaseModal').classList.remove('active');
+  document.getElementById('testCaseForm').reset();
+}
+
+function handleModalOverlayClick(event) {
+  if (event.target === event.currentTarget) {
+    closeTestCaseModal();
+  }
+}
+
+async function saveTestCase(event) {
+  event.preventDefault();
+
+  if (!currentRun) return;
+
+  const name = document.getElementById('testCaseName').value.trim();
+  const expected = document.getElementById('testCaseExpected').value.trim();
+  const tagsRaw = document.getElementById('testCaseTags').value;
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t).slice(0, 5);
+
+  try {
+    const res = await fetch(`${API_BASE}/cmd`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cmd: 'save_testcase',
+        args: {
+          name,
+          agent: currentRun.agent,
+          prompt: currentRun.prompt,
+          expected,
+          tags
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.ok) {
+      alert('Test case saved!');
+      closeTestCaseModal();
+    } else {
+      alert('Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// === Helpers ===
+function updateCharCount() {
+  const count = document.getElementById('promptInput').value.length;
+  document.getElementById('charCount').textContent = `${count} characters`;
+}
+
+function getAgentName(agentId) {
+  const agent = agents.find(a => a.id === agentId);
+  return agent ? agent.name : agentId;
+}
+
+function truncate(str, len) {
+  return str.length > len ? str.slice(0, len) + '...' : str;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatTimeAgo(timestamp) {
+  const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function startElapsedTimer() {
+  elapsedStart = Date.now();
+  elapsedInterval = setInterval(() => {
+    const elapsed = ((Date.now() - elapsedStart) / 1000).toFixed(1);
+    const el = document.getElementById('elapsedTime');
+    if (el) {
+      el.textContent = `${elapsed}s`;
+    }
+  }, 100);
+}
+
+function stopElapsedTimer() {
+  if (elapsedInterval) {
+    clearInterval(elapsedInterval);
+    elapsedInterval = null;
+  }
+}
+
+function updateSessionStats() {
+  document.getElementById('sessionRuns').textContent = runs.length;
+
+  if (runs.length > 0) {
+    const successCount = runs.filter(r => r.status === 'success').length;
+    const successRate = ((successCount / runs.length) * 100).toFixed(0);
+    document.getElementById('sessionSuccess').textContent = `${successRate}%`;
+
+    const avgLatency = (runs.reduce((sum, r) => sum + (r.elapsed || 0), 0) / runs.length).toFixed(0);
+    document.getElementById('sessionAvgLatency').textContent = `${avgLatency}ms`;
+  } else {
+    document.getElementById('sessionSuccess').textContent = '0%';
+    document.getElementById('sessionAvgLatency').textContent = '0ms';
+  }
+}
+
+// === Keyboard Shortcuts ===
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Cmd/Ctrl+Enter = Send
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!isRunning) {
+        sendPrompt();
+      }
+    }
+
+    // Esc = Close modal
+    if (e.key === 'Escape') {
+      closeTestCaseModal();
+    }
+
+    // Cmd/Ctrl+K = Focus search
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('historySearch').focus();
+    }
+  });
+}
+</script>
+</body>
+</html>
