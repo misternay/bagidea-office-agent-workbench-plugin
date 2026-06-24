@@ -1,6 +1,6 @@
 {
   "id": "agent-workbench",
-  "name": "Agent Workbench",
+  "name": "🧪 Agent Workbench",
   "version": "1.0.0",
   "description": "Test and benchmark AI agents with prompts, capture responses and token usage",
   "panel": "panel.html",
