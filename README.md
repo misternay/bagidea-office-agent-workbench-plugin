@@ -1,20 +1,20 @@
 # 🧪 Agent Workbench
 
-Plugin สำหรับ [BagIdea Office](https://github.com/bagidea/bagidea-office) — ทดสอบและ benchmark AI agents
+A plugin for [BagIdea Office](https://github.com/bagidea/bagidea-office) — test and benchmark AI agents.
 
-## ความสามารถ
+## Features
 
-- **Run** — รัน prompt บน agent ไหนก็ได้ จับ response, token usage, และ elapsed time
-- **Model Override** — เลือก model ได้ (haiku/sonnet/opus) เพื่อเทียบ performance/ราคา
-- **Save Case** — เก็บผลลัพธ์เป็น test case ไว้เช็ค regression ภายหลัง
-- **Dashboard Panel** — UI สำหรับดูผลรันย้อนหลัง, token usage, และเปรียบเทียบ runs
+- **Run** — run a prompt on any agent and capture the response, token usage, and elapsed time.
+- **Model Override** — pick the model (haiku/sonnet/opus) to compare performance vs. cost.
+- **Save Case** — save a result as a test case to check for regressions later.
+- **Dashboard Panel** — a UI to review past runs, see token usage, and compare runs.
 
-## ติดตั้ง
+## Install
 
-1. ใน BagIdea Office: **⋯ → 🧩 Plugins Hub** → ค้นหา "Agent Workbench" → ติดตั้ง
-2. หรือ manual: `git clone https://github.com/misternay/bagidea-office-agent-workbench-plugin.git plugins/agent-workbench`
+1. In BagIdea Office: **⋯ → 🧩 Plugins Hub** → search "Agent Workbench" → Install.
+2. Or manually: `git clone https://github.com/misternay/bagidea-office-agent-workbench-plugin.git plugins/agent-workbench`
 
-## วิธีใช้
+## Usage
 
 ```
 POST /plugin/agent-workbench/cmd  { "cmd": "run",      "args": { "agent": "krit", "prompt": "...", "model": "haiku" } }
@@ -22,7 +22,7 @@ POST /plugin/agent-workbench/cmd  { "cmd": "list-agents" }
 POST /plugin/agent-workbench/cmd  { "cmd": "save-case", "args": { "runId": "...", "name": "smoke-test" } }
 ```
 
-หรือใช้ผ่าน panel: `GET /plugin/agent-workbench/panel`
+Or use it through the panel: `GET /plugin/agent-workbench/panel`
 
 ## License
 
